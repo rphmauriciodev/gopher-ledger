@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ledger;
+
+option go_package = "github.com/rphmauriciodev/gopher-ledger/api/ledgerproto";
+
+service LedgerService {
+  rpc processTransaction (TransactionRequest) returns (TransactionResponse);
+}
+
+message TransactionRequest {
+  string account_id = 1;
+  int64 amount = 2;
+  string type = 3; // "credit" ou "debit"
+  string correlation_id = 4;
+}
+
+message TransactionResponse {
+  string message = 1;
+  bool success = 2;
+}

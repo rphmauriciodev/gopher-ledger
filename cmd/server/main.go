@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	pb "github.com/rphmauriciodev/gopher-ledger/api/ledgerproto"
 	"github.com/rphmauriciodev/gopher-ledger/internal/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/rphmauriciodev/gopher-ledger/internal/ledger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -37,40 +39,46 @@ func main() {
 
 	accountRepo := pg.NewPostgresAccountRepository(db)
 	transactionRepo := pg.NewPostgresTransactionRepository(db)
-	txManager := pg.NewPostgresTransactionManager(db)
-
+	txRepo := pg.NewPostgresTransactionManager(db)
 	txQueue := make(chan domain.Transaction, 100)
-	service := ledger.NewLedgerService(accountRepo, transactionRepo, txManager, logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	service := ledger.NewLedgerService(accountRepo, transactionRepo, txRepo, logger)
+
 	wp := ledger.NewWorkerPool(service, txQueue, 10)
+
 	go func() {
-		logger.Info().Int("workers", 10).Msg("Worker Pool iniciado")
+		logger.Info().Msg("Worker Pool iniciado com 10 operários")
 		wp.Start(ctx)
 	}()
 
 	server := grpc.NewServer()
+
 	handler := grpcHandler.NewLedgerHandler(txQueue)
+
 	pb.RegisterLedgerServiceServer(server, handler)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPCPort))
+	grpcPort := viper.GetString("GRPC_PORT")
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Falha ao abrir porta gRPC")
+		log.Fatal().Err(err).Msg("Falha ao abrir porta gRPC")
 	}
 
 	go func() {
-		logger.Info().Str("port", cfg.GRPCPort).Msg("Servidor gRPC rodando")
-		if err := server.Serve(lis); err != nil && err != grpc.ErrServerStopped {
-			logger.Fatal().Err(err).Msg("Erro inesperado no servidor gRPC")
+		logger.Info().Msgf("Servidor gRPC rodando na porta %s", grpcPort)
+		if err := server.Serve(lis); err != nil {
+			log.Fatal().Err(err).Msg("Erro no servidor gRPC")
 		}
 	}()
-	<-ctx.Done()
-	logger.Info().Msg("Sinal de interrupção recebido. Desligando gopher-ledger graciosamente...")
 
+	<-ctx.Done()
+	logger.Info().Msg("Desligando gopher-ledger graciosamente...")
 	server.GracefulStop()
+
 	close(txQueue)
 
+	time.Sleep(time.Second * 2)
 	logger.Info().Msg("Gopher-ledger encerrado com sucesso.")
 }
