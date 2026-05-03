@@ -1,5 +1,4 @@
-# ESTÁGIO 1: Compilação (Builder)
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 RUN apk add --no-cache git
 
@@ -15,9 +14,9 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+WORKDIR /app
 
-COPY --from=builder /app/ledger .
+COPY --from=builder --chmod=0755 /app/ledger .
 
 COPY --from=builder /app/.env . 
 
