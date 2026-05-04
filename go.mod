@@ -3,6 +3,7 @@ module github.com/rphmauriciodev/gopher-ledger
 go 1.25.0
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.12.3
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/viper v1.21.0

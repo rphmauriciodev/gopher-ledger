@@ -18,4 +18,5 @@ message TransactionRequest {
 message TransactionResponse {
   string message = 1;
   bool success = 2;
+  string transaction_id = 3;
 }
