@@ -26,3 +26,12 @@ INSERT INTO accounts (id, owner_id, balance, version) VALUES
 ('acc_2', 'user_88', 0, 0),
 ('acc_3', 'user_99', 500000, 0)
 ON CONFLICT (id) DO NOTHING;
+
+CREATE OR REPLACE VIEW view_dashboard_summary AS
+SELECT 
+    COUNT(*) as total_tx,
+    SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END) / 100.0 as total_credit,
+    SUM(CASE WHEN type = 'DEBIT' THEN amount ELSE 0 END) / 100.0 as total_debit,
+    (SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END) - 
+     SUM(CASE WHEN type = 'DEBIT' THEN amount ELSE 0 END)) / 100.0 as net_flow
+FROM transactions;

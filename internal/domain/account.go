@@ -24,3 +24,24 @@ type AccountRepository interface {
 	GetByID(ctx context.Context, id string) (*Account, error)
 	Save(ctx context.Context, account *Account) error
 }
+
+func (a *Account) ApplyTransaction(amount int64, txType TransactionType) error {
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+
+	switch txType {
+	case Debit:
+		if a.Balance < amount {
+			return ErrInsufficientFunds
+		}
+		a.Balance -= amount
+	case Credit:
+		a.Balance += amount
+	default:
+		return errors.New("tipo de transação inválido")
+	}
+
+	a.UpdatedAt = time.Now()
+	return nil
+}

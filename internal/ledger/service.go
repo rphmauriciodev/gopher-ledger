@@ -2,7 +2,6 @@ package ledger
 
 import (
 	"context"
-	"time"
 
 	"github.com/rphmauriciodev/gopher-ledger/internal/domain"
 	"github.com/rs/zerolog"
@@ -34,7 +33,7 @@ func (s *LedgerService) ExecuteTransaction(ctx context.Context, txReq domain.Tra
 			Str("correlation_id", txReq.CorrelationID).
 			Msg("Processando nova transação")
 
-		acc, err := s.accountRepo.GetByID(ctx, txReq.AccountID)
+		acc, err := s.accountRepo.GetByID(txCtx, txReq.AccountID)
 		if err != nil {
 			s.logger.Error().
 				Err(err).
@@ -43,23 +42,12 @@ func (s *LedgerService) ExecuteTransaction(ctx context.Context, txReq domain.Tra
 			return err
 		}
 
-		if txReq.Type == domain.Debit && acc.Balance < txReq.Amount {
-			err := domain.ErrInsufficientFunds
-			s.logger.Error().
-				Err(err).
-				Str("transaction_id", txReq.ID).
-				Msg("O saldo da conta não é suficiente para completar a transação")
+		if err := acc.ApplyTransaction(txReq.Amount, txReq.Type); err != nil {
+			s.logger.Error().Err(err).Msg("Erro ao aplicar transação no saldo")
 			return err
 		}
 
-		if txReq.Type == domain.Debit {
-			acc.Balance -= txReq.Amount
-		} else {
-			acc.Balance += txReq.Amount
-		}
-		acc.UpdatedAt = time.Now()
-
-		if err := s.accountRepo.Save(ctx, acc); err != nil {
+		if err := s.accountRepo.Save(txCtx, acc); err != nil {
 			s.logger.Error().
 				Err(err).
 				Str("transaction_id", txReq.ID).
@@ -67,7 +55,7 @@ func (s *LedgerService) ExecuteTransaction(ctx context.Context, txReq domain.Tra
 			return err
 		}
 
-		if err := s.transactionRepo.Create(ctx, &txReq); err != nil {
+		if err := s.transactionRepo.Create(txCtx, &txReq); err != nil {
 			s.logger.Error().
 				Err(err).
 				Str("transaction_id", txReq.ID).

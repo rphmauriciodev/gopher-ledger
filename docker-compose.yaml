@@ -32,5 +32,21 @@ services:
       GRPC_PORT: ${GRPC_PORT}
     restart: always
 
+metabase:
+  image: metabase/metabase:latest
+  container_name: ledger-dashboard
+  ports:
+    - "3000:3000"
+  environment:
+    MB_DB_TYPE: postgres
+    MB_DB_DBNAME: ${DB_NAME}
+    MB_DB_PORT: 5432
+    MB_DB_USER: ${DB_USER}
+    MB_DB_PASS: ${DB_PASSWORD}
+    MB_DB_HOST: db
+  depends_on:
+    db:
+      condition: service_healthy
+
 volumes:
   postgres_data:
