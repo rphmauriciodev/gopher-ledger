@@ -1,3 +1,5 @@
+SELECT 'CREATE DATABASE metabase' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'metabase')\gexec
+
 CREATE TABLE IF NOT EXISTS accounts (
     id VARCHAR(50) PRIMARY KEY,
     owner_id VARCHAR(50) NOT NULL,

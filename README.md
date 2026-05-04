@@ -76,9 +76,19 @@ O servidor gRPC estará rodando na porta definida em `.env` (padrão `:50051`) e
 
 Para visualizar os dados:
 1. Acesse `http://localhost:3000`.
-2. Siga as instruções de setup inicial do Metabase.
-3. Conecte ao banco PostgreSQL usando as credenciais do seu `.env`.
-4. Crie seus próprios dashboards para monitorar o volume de transações e saldos das contas.
+2. No setup inicial, crie sua conta de administrador.
+3. Quando o Metabase perguntar sobre **"Add your data"**, selecione **PostgreSQL**.
+4. Use as seguintes configurações (baseadas no seu `.env`):
+   - **Name:** Gopher Ledger
+   - **Host:** `db` (importante: use o nome do serviço no Docker, não localhost)
+   - **Port:** `5432`
+   - **Database name:** `gopher_ledger` (ou o valor de `DB_NAME`)
+   - **Username:** seu `DB_USER`
+   - **Password:** seu `DB_PASSWORD`
+5. Pronto! Agora você pode criar dashboards em cima das tabelas `accounts` e `transactions`.
+
+> [!TIP]
+> O Metabase agora utiliza um banco de dados separado (`metabase`) para salvar suas configurações, garantindo que o banco do Ledger (`gopher_ledger`) fique limpo e focado apenas nos dados do negócio.
 
 ---
 
